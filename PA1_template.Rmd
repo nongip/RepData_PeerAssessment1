@@ -1,8 +1,13 @@
 ---
-title: "w2assignment"
+title: "PA1_template"
 author: "Roberto Di Pietro"
 date: "17/5/2019"
-output: html_document
+output: md_document
+fig_caption: yes
+toc: yes
+pdf_document: default
+keep_md: yes
+self_contained: no
 ---
 
 I first clean the Global Environment and set up the markdown page
@@ -61,7 +66,9 @@ library(ggplot2)
 
 
 Request: Histogram of the total number of steps taken each day
-Observations: the distribution is positive asymmetric, the bulk of the steps taken per day is between 10K and 15K, which is around 7 and 10 kilometers per day. I presume this user isn't exactly always home.. 
+Observations: the distribution is positive asymmetric, the bulk of the steps 
+taken per day is between 10K and 15K, which is around 7 and 10 kilometers per 
+day. I presume this user isn't exactly always home.. 
 
 ```{r 2}
 activities %>% group_by(date) %>% 
@@ -71,7 +78,9 @@ activities %>% group_by(date) %>%
 
 Request:Mean and median number of steps taken each day
 
-Observations: median is always back of the mean, confirming the skewnewss of the distribution of the steps. Median steps are often zero, this reads that in those days the user is still (sleeping, laying or sat) for most of the day (+50% of the time).
+Observations: median is always back of the mean, confirming the skewnewss of the distribution of the steps. Median steps are often zero, this reads that in those
+days the user is still (sleeping, laying or sat) for most of the day (+50% of 
+the time).
 
 ```{r 3}
 activities %>% group_by(date) %>% 
@@ -81,7 +90,10 @@ activities %>% group_by(date) %>%
 
 Request:Time series plot of the average number of steps taken
 
-Observations: means per day reflect the different totals in number of steps taken per day: some days like in late november the user was very active, while on some other day the user seems to have not taken a single step out of bed (or most likely he forgot his smartwatch at home)
+Observations: means per day reflect the different totals in number of steps 
+taken per day: some days like in late november the user was very active, while 
+on some other day the user seems to have not taken a single step out of bed (or 
+most likely he forgot his smartwatch at home)
 
 ```{r 4}
 avgstepsbyday<-activities %>% group_by(date) %>% 
@@ -90,9 +102,13 @@ avgstepsbyday<-activities %>% group_by(date) %>%
 ggplot(avgstepsbyday,aes(date,`mean steps`))+geom_line()
 ```
 
-Request: The 5-minute interval that, on average, contains the maximum number of steps
+Request: The 5-minute interval that, on average, contains the maximum number of 
+steps
 
-Observations: the interval in which the user takes more steps is no. 835.When dividing it by 60 one gets 13.9, which-supposing the intervals start their numbering at midnight- corresponds to a peak in activity some time before 2pm, that might be in his lunchbreak. 
+Observations: the interval in which the user takes more steps is no. 835.When 
+dividing it by 60 one gets 13.9, which-supposing the intervals start their 
+numbering at midnight- corresponds to a peak in activity some time before 2pm, 
+that might be in his lunchbreak. 
 
 ```{r 5}
 avgstepsbyinterval<-activities %>% group_by(interval) %>% 
@@ -115,10 +131,12 @@ for (i in unique(activities$interval)) {
 
 ```
 
-Request:Histogram of the total number of steps taken each day after missing values are 
+Request:Histogram of the total number of steps taken each day after missing 
+values are 
 imputed
 
-Observation: given the choice of imputing missing to the medians, is all but strange that the prominence of the central bin was confirmed and reinforced
+Observation: given the choice of imputing missing to the medians, is all but 
+strange that the prominence of the central bin was confirmed and reinforced
 
 ```{r 7}
 activitiesNAi %>% group_by(date) %>% 
@@ -126,21 +144,31 @@ activitiesNAi %>% group_by(date) %>%
         select("total steps") %>% pull() %>% hist()
 ```
 
-Request:Panel plot comparing the average number of steps taken per 5-minute interval 
+Request:Panel plot comparing the average number of steps taken per 5-minute 
+interval 
 across weekdays and weekends
 
-Observation: I created two different panel, one that highlights the dynamics through the day of respectively the weekday and the weekend, and another that highlights the distribution of "step-intensity" of the intervals again in both weekdays and weeends.
-What emerges is a higher mobility in weekends and a "more rigid" pattern of peaks of activity and still-intervals during weekdays. This is likely associated with a job that involves a mostly constant "routine" during weekdays than in weekends.
+Observation: I created two different panel, one that highlights the dynamics 
+through the day of respectively the weekday and the weekend, and another that highlights the distribution of "step-intensity" of the intervals again in both 
+weekdays and weeends.
+What emerges is a higher mobility in weekends and a "more rigid" pattern of 
+peaks of activity and still-intervals during weekdays. This is likely associated 
+with a job that involves a mostly constant "routine" during weekdays than in 
+weekends.
 
 ```{r 8}
 activitiesWE<-activities %>% mutate(weekdays=weekdays(date))
 activitiesWE$WE<-NA
-activitiesWE$WE[activitiesWE$weekdays=="sabato" |activitiesWE$weekdays=="domenica"] <-1
-activitiesWE$WE[activitiesWE$weekdays!="sabato" &activitiesWE$weekdays!="domenica"] <-0
+activitiesWE$WE[activitiesWE$weekdays=="sabato" |
+                  activitiesWE$weekdays=="domenica"] <-1
+activitiesWE$WE[activitiesWE$weekdays!="sabato" &
+                  activitiesWE$weekdays!="domenica"] <-0
 avgstepsbyintervalbyWE<-activitiesWE %>% group_by(interval,WE) %>% 
         summarise(mean_steps=mean(steps,na.rm = TRUE))
-avgstepsbyintervalbyWE$WE<-factor(avgstepsbyintervalbyWE$WE,levels=c(0,1),labels=c("weekday","weekend"))
-ggplot(avgstepsbyintervalbyWE,aes(interval,mean_steps))+geom_line()+facet_grid(.~WE)
+avgstepsbyintervalbyWE$WE<-factor(avgstepsbyintervalbyWE$WE,levels=c(0,1),
+                                  labels=c("weekday","weekend"))
+ggplot(avgstepsbyintervalbyWE,aes(interval,mean_steps))+geom_line()+
+      facet_grid(WE~.)
 ```
 
 
