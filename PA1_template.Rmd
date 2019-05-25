@@ -1,25 +1,149 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "w2assignment"
+author: "Roberto Di Pietro"
+date: "17/5/2019"
+output: html_document
 ---
 
+I first clean the Global Environment and set up the markdown page
+```{r setup 1, include=FALSE}
+rm(list=ls())
+yourdirectory<-"F:/CasaUfficio/R notes/Reproduceable Research" #here you 
+                                                                #plug in yours
+require(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = yourdirectory)
 
-## Loading and preprocessing the data
+```
+
+I create a directory where I can download the data
+
+```{r setup 2}
+print("Hello, this is my version")
+print(version)
+
+#create dir
+if(!file.exists("data")) {
+        dir.create("data")
+}
+
+```
+
+I download the data from the link
+```{r download}
+
+url<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+if(!file.exists("data.zip")) {
+        download.file(url,destfile="data.zip")
+        dateDownloaded<-date()
+        print(dateDownloaded)
+}
+
+```
+
+I unzip and open the data
+```{r open}
+mydir<-getwd()
+print(mydir)
+if(!file.exists("data.zip")) {
+        unzip("data.zip", exdir=paste(mydir,"/data",sep=""))  
+}
+activities<-read.csv(paste(mydir,"/data/activity.csv",sep=""))
+activities$date<-as.Date(as.character(activities$date))
+```
+
+I load the needed packages
+
+```{r libraries}
+library(dplyr)
+library(ggplot2)
+```
 
 
+Request: Histogram of the total number of steps taken each day
+Observations: the distribution is positive asymmetric, the bulk of the steps taken per day is between 10K and 15K, which is around 7 and 10 kilometers per day. I presume this user isn't exactly always home.. 
 
-## What is mean total number of steps taken per day?
+```{r 2}
+activities %>% group_by(date) %>% 
+        summarise("total steps"=sum(steps,na.rm = TRUE)) %>% 
+        select("total steps") %>% pull() %>% hist()
+```
+
+Request:Mean and median number of steps taken each day
+
+Observations: median is always back of the mean, confirming the skewnewss of the distribution of the steps. Median steps are often zero, this reads that in those days the user is still (sleeping, laying or sat) for most of the day (+50% of the time).
+
+```{r 3}
+activities %>% group_by(date) %>% 
+        summarise("mean steps"=mean(steps,na.rm = TRUE),
+                  "median steps"=median(steps,na.rm = TRUE))
+```
+
+Request:Time series plot of the average number of steps taken
+
+Observations: means per day reflect the different totals in number of steps taken per day: some days like in late november the user was very active, while on some other day the user seems to have not taken a single step out of bed (or most likely he forgot his smartwatch at home)
+
+```{r 4}
+avgstepsbyday<-activities %>% group_by(date) %>% 
+        summarise("mean steps"=mean(steps,na.rm = TRUE)) %>% 
+        filter(!is.nan(`mean steps`))
+ggplot(avgstepsbyday,aes(date,`mean steps`))+geom_line()
+```
+
+Request: The 5-minute interval that, on average, contains the maximum number of steps
+
+Observations: the interval in which the user takes more steps is no. 835.When dividing it by 60 one gets 13.9, which-supposing the intervals start their numbering at midnight- corresponds to a peak in activity some time before 2pm, that might be in his lunchbreak. 
+
+```{r 5}
+avgstepsbyinterval<-activities %>% group_by(interval) %>% 
+        summarise(mean_steps=mean(steps,na.rm = TRUE)) 
+maxstepinterval<-avgstepsbyinterval %>% filter(mean_steps==max(mean_steps)) 
+maxstepinterval
+```
+
+Request: Code to describe and show a strategy for imputing missing data
+
+Explanation: I chose to impute NAs to the median number of steps taken for the corresponding interval. 
+
+```{r 6}
+activitiesNAi<-activities 
+for (i in unique(activities$interval)) {
+  activitiesNAi$steps[is.na(activitiesNAi$steps) & activities$interval==i]<-
+    activities %>% filter(interval==i) %>% select(steps) %>% pull() %>%
+    median(steps,na.rm = T)   
+  }
+
+```
+
+Request:Histogram of the total number of steps taken each day after missing values are 
+imputed
+
+Observation: given the choice of imputing missing to the medians, is all but strange that the prominence of the central bin was confirmed and reinforced
+
+```{r 7}
+activitiesNAi %>% group_by(date) %>% 
+        summarise("total steps"=sum(steps,na.rm = TRUE)) %>% 
+        select("total steps") %>% pull() %>% hist()
+```
+
+Request:Panel plot comparing the average number of steps taken per 5-minute interval 
+across weekdays and weekends
+
+Observation: I created two different panel, one that highlights the dynamics through the day of respectively the weekday and the weekend, and another that highlights the distribution of "step-intensity" of the intervals again in both weekdays and weeends.
+What emerges is a higher mobility in weekends and a "more rigid" pattern of peaks of activity and still-intervals during weekdays. This is likely associated with a job that involves a mostly constant "routine" during weekdays than in weekends.
+
+```{r 8}
+activitiesWE<-activities %>% mutate(weekdays=weekdays(date))
+activitiesWE$WE<-NA
+activitiesWE$WE[activitiesWE$weekdays=="sabato" |activitiesWE$weekdays=="domenica"] <-1
+activitiesWE$WE[activitiesWE$weekdays!="sabato" &activitiesWE$weekdays!="domenica"] <-0
+avgstepsbyintervalbyWE<-activitiesWE %>% group_by(interval,WE) %>% 
+        summarise(mean_steps=mean(steps,na.rm = TRUE))
+avgstepsbyintervalbyWE$WE<-factor(avgstepsbyintervalbyWE$WE,levels=c(0,1),labels=c("weekday","weekend"))
+ggplot(avgstepsbyintervalbyWE,aes(interval,mean_steps))+geom_line()+facet_grid(.~WE)
+```
 
 
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+```{r 8b}
+qplot(mean_steps,data=avgstepsbyintervalbyWE, fill=WE,binwidth=5 )
+```
