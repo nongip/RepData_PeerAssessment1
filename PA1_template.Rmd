@@ -4,6 +4,7 @@ author: "Roberto Di Pietro"
 date: "17/5/2019"
 output: md_document
 fig_caption: yes
+keep_md: yes
 toc: yes
 pdf_document: default
 keep_md: yes
